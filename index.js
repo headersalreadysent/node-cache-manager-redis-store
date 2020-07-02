@@ -2,7 +2,7 @@ import Redis from 'redis';
 
 const redisStore = (...args) => {
   const redisCache = Redis.createClient(...args);
-  const storeArgs = redisCache.options;
+  const storeArgs = Object.assign({serialize:true},redisCache.options);
 
   return {
     name: 'redis',
@@ -26,7 +26,7 @@ const redisStore = (...args) => {
         }
 
         const ttl = (options.ttl || options.ttl === 0) ? options.ttl : storeArgs.ttl;
-        const val = JSON.stringify(value) || '"undefined"';
+        const val = storeArgs.serialize===true ? JSON.stringify(value) || '"undefined"' : val+"";
 
         if (ttl) {
           redisCache.setex(key, ttl, val, handleResponse(cb));
@@ -193,7 +193,7 @@ function handleResponse(cb, opts = {}) {
 
       result = result.map((_result) => {
         try {
-          _result = JSON.parse(_result);
+          _result = storeArgs.serialize===true ? JSON.parse(_result) : _result;
         } catch (e) {
           return cb && cb(e);
         }
